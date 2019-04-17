@@ -4,6 +4,7 @@
 # Thus far it only has enough to do what I use... feel free to add more.
 
 # Copyright (c) 2019 Chris Lawrence
+# Copyright (c) 2017 Pimoroni Ltd.
 
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -27,7 +28,7 @@
 
 import curses
 import atexit
-import st7036_codec
+from . import st7036_codec
 
 # If you have an LCD that has different dimensions, you can change this.
 HEIGHT =  3
@@ -73,6 +74,7 @@ def write(text):
 
 def clear():
     lcd_screen.clear()
+    lcd_screen.border()
     lcd_screen.refresh()
 
 def set_display_mode(enable=True, cursor=False, blink=False):
