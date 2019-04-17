@@ -1,5 +1,30 @@
 #!/usr/bin/python3
 
+# Displays GPS location fix information from the gpsd daemon on a
+# "Display-O-Tron 3000" LCD attached to a Raspberry Pi
+
+# Copyright (c) 2019 Chris Lawrence
+
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # Uses: dot3k, gps
 
 EMULATE = False
@@ -61,15 +86,15 @@ while True:
         lcd.set_cursor_position(0,1)
         lcd.write('%9.5f' % (abs(lon)) + ew)
         lcd.set_cursor_position(0,2)
-        speed = packet.speed * speed_factor
+        speed = packet.speed() * speed_factor
         direction = ('N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW')[round(packet.track/45.0) % 8]
         
-        lcd.write('%3.0f %s %-2.2s' % (speed, speed_units, direction))
+        lcd.write('%3.0f %s %-2.2s' % (speed, speed_unit, direction))
 
         precision = packet.position_precision()
         lcd.set_cursor_position(11, 1)
         lcd.write(chr(0xf9)+'%3.0f%s' % (precision[0] * distance_factor,
-                                         distance_units))
+                                         distance_unit))
 
         # Convert this to a vague signal quality metric
         # Use sqrt(1/HDOP) instead?
@@ -81,15 +106,14 @@ while True:
         if packet.mode >= 3:
             lcd.set_cursor_position(10, 0)
             lcd.write('%5.0f%s' % (packet.alt * distance_factor,
-                                   distance_units))
+                                   distance_unit))
         else:
-            lcd.set_cursor_position(13, 0)
-            lcd.write('2-D')
-            
+            lcd.set_cursor_position(10, 0)
+            lcd.write(' 2D fix')
     else:
         lcd.clear()
-        lcd.set_cursor_position(0,0)
-        lcd.write('No fix.')
+        lcd.set_cursor_position(10, 0)
+        lcd.write(' No fix')
         backlight.set_graph(0.0)
 
     # Don't poll too much
