@@ -27,21 +27,33 @@
 
 # Uses: dot3k, gps
 
-EMULATE = False
-
-if EMULATE:
-    from dot3k_emu import lcd, backlight
-else:
-    from dot3k import lcd, backlight
-    
+import argparse
 import gpsd
 import time
 import math
 
-USE_METRIC = True
-#USE_METRIC = False
+parser = argparse.ArgumentParser(description='''
+Displays GPS location fix information from the gpsd daemon on a
+"Display-O-Tron 3000" LCD attached to a Raspberry Pi''')
+#parser.add_argument('--metric', '--si', action='store_true',
+#                    help='use SI (metric) measurements')
+parser.add_argument('--traditional', '--imperial', action='store_false',
+                    dest='metric',
+                    help='use traditional (feet/miles) measurements')
 
-if USE_METRIC:
+parser.add_argument('--dms', action='store_true',
+                    help='use degrees/minutes/seconds')
+                    
+parser.add_argument('--emulate', action='store_true',
+                    help='use ST7036 curses emulation instead of hardware.')
+args = parser.parse_args()
+
+if args.emulate:
+    from dot3k_emu import lcd, backlight
+else:
+    from dot3k import lcd, backlight
+
+if args.metric:
     distance_unit = "m"
     distance_factor = 1.0
     speed_unit = "km/h"
@@ -52,6 +64,22 @@ else:
     speed_unit = "mph"
     speed_factor = 2.23694
 
+if args.dms:
+    def format_position(position):
+        # Stolen from https://stackoverflow.com/questions/2579535/convert-dd-decimal-degrees-to-dms-degrees-minutes-seconds-in-python
+        is_positive = position >= 0
+        dd = abs(position)
+        minutes, seconds = divmod(dd*3600, 60)
+        degrees, minutes = divmod(minutes, 60)
+
+        # Ignore sign
+        # degrees = degrees if is_positive else -degrees
+        
+        return "%3d\xf2%2d'%2d" % (degrees, minutes, seconds)
+else:
+    def format_position(position):
+        return "%8.4f\xf2" % abs(position)
+    
 connected = False
 while not connected:
     try:
@@ -82,9 +110,9 @@ while True:
         ew = ('E' if lon >= 0 else 'W')
 
         lcd.set_cursor_position(0,0)
-        lcd.write('%9.5f' % (abs(lat)) + ns)
+        lcd.write(format_position(lat) + ns)
         lcd.set_cursor_position(0,1)
-        lcd.write('%9.5f' % (abs(lon)) + ew)
+        lcd.write(format_position(lon) + ew)
         lcd.set_cursor_position(0,2)
         speed = packet.speed() * speed_factor
         direction = ('N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW')[round(packet.track/45.0) % 8]
@@ -93,7 +121,7 @@ while True:
 
         precision = packet.position_precision()
         lcd.set_cursor_position(11, 1)
-        lcd.write(chr(0xf9)+'%3.0f%s' % (precision[0] * distance_factor,
+        lcd.write('\xf9%3.0f%s' % (precision[0] * distance_factor,
                                          distance_unit))
 
         # Convert this to a vague signal quality metric
@@ -109,11 +137,11 @@ while True:
                                    distance_unit))
         else:
             lcd.set_cursor_position(10, 0)
-            lcd.write(' 2D fix')
+            lcd.write('    2D')
     else:
         lcd.clear()
-        lcd.set_cursor_position(10, 0)
-        lcd.write(' No fix')
+        lcd.set_cursor_position(0, 1)
+        lcd.write('No fix.')
         backlight.set_graph(0.0)
 
     # Don't poll too much
