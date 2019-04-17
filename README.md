@@ -10,5 +10,5 @@ Requires the following Python 3 packages, along with gpsd on the Pi:
 
 # To Do
 
-- Add dot3k emulation code to simulate output for easier development
+- Rather than polling, respond to messages as they arrive
 - Enable joystick button for something (metric/traditional switch?)
