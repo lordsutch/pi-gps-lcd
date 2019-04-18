@@ -88,13 +88,26 @@ while not connected:
     except:
         time.sleep(1)
 
-lcd.clear()
 backlight.rgb(255,255,255)
 backlight.set_graph(0.0)
+lcd.clear()
+
+error = False
 
 while True:
-    packet = gpsd.get_current()
+    try:
+        packet = gpsd.get_current()
+    except UserWarning as err:
+        lcd.set_cursor_position(0, 1)
+        lcd.write(str(err))
+        time.sleep(1.0)
+        error = True
+        continue
 
+    if error:
+        error = False
+        lcd.clear()
+        
     #print(packet)
     #lcd.set_cursor_position(11,2)
     #lcd.write('%2d/%02d' % (packet.sats_valid, packet.sats))
@@ -145,4 +158,4 @@ while True:
         backlight.set_graph(0.0)
 
     # Don't poll too much
-    time.sleep(0.2)
+    time.sleep(0.25)
