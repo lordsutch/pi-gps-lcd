@@ -92,20 +92,15 @@ backlight.rgb(255,255,255)
 backlight.set_graph(0.0)
 lcd.clear()
 
-error = False
-
-while True:
+def update_display(error=False):
     try:
         packet = gpsd.get_current()
     except UserWarning as err:
         lcd.set_cursor_position(0, 1)
         lcd.write(str(err))
-        time.sleep(1.0)
-        error = True
-        continue
+        return True
 
     if error:
-        error = False
         lcd.clear()
         
     #print(packet)
@@ -157,5 +152,13 @@ while True:
         lcd.write('No fix.')
         backlight.set_graph(0.0)
 
-    # Don't poll too much
-    time.sleep(0.25)
+    return False
+
+try:
+    error = False
+    while True:
+        error = update_display(error)
+        time.sleep(0.25)
+finally:
+    backlight.rgb(0, 0, 0)
+    backlight.set_graph(0.0)
