@@ -53,6 +53,8 @@ if args.emulate:
 else:
     from dot3k import lcd, backlight
 
+MAXDIST = 15 # Used for strength indicator
+    
 if args.metric:
     distance_unit = "m"
     distance_factor = 1.0
@@ -80,6 +82,10 @@ else:
     def format_position(position):
         return "%8.4f\xf2" % abs(position)
     
+backlight.rgb(0,0,255)
+backlight.set_graph(0.0)
+lcd.clear()
+
 connected = False
 while not connected:
     try:
@@ -87,10 +93,6 @@ while not connected:
         connected = True
     except:
         time.sleep(1)
-
-backlight.rgb(255,255,255)
-backlight.set_graph(0.0)
-lcd.clear()
 
 def update_display(error=False):
     try:
@@ -135,7 +137,10 @@ def update_display(error=False):
         # Convert this to a vague signal quality metric
         # Use sqrt(1/HDOP) instead?
         
-        pval = math.expm1(math.e/(precision[0]+1))
+        #pval = math.expm1(math.e/(precision[0]+1))
+        #pval = math.sqrt(1/(precision[0]+1))
+
+        pval = min(max(0, (MAXDIST-precision[0])/MAXDIST), 1)
         backlight.set_graph(pval)
         #print(precision[0], pval)
         
